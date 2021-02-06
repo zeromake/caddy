@@ -18,6 +18,7 @@ package proxy
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -70,6 +71,8 @@ type Upstream interface {
 
 	// Stops the upstream from proxying requests to shutdown goroutines cleanly.
 	Stop() error
+
+	Cors() *CorsConfig
 }
 
 // UpstreamHostDownFunc can be used to customize how Down behaves.
@@ -119,6 +122,40 @@ func (uh *UpstreamHost) Available() bool {
 	return !uh.Down() && !uh.Full()
 }
 
+const (
+	allowOriginKey      string = "Access-Control-Allow-Origin"
+	allowCredentialsKey        = "Access-Control-Allow-Credentials"
+	allowHeadersKey            = "Access-Control-Allow-Headers"
+	allowMethodsKey            = "Access-Control-Allow-Methods"
+	maxAgeKey                  = "Access-Control-Max-Age"
+	originKey         = "Origin"
+	varyKey           = "Vary"
+	requestMethodKey  = "Access-Control-Request-Method"
+	requestHeadersKey = "Access-Control-Request-Headers"
+	exposeHeadersKey  = "Access-Control-Expose-Headers"
+	options           = "OPTIONS"
+)
+
+type CorsConfig struct {
+	AllowedOrigins   []string
+	AllowedMethods   string
+	AllowedHeaders   string
+	ExposedHeaders   string
+	AllowCredentials *bool
+	MaxAge           int
+}
+
+func DefaultCors() *CorsConfig {
+	return &CorsConfig{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   "POST, GET, OPTIONS, PUT, DELETE",
+		AllowedHeaders:   "",
+		ExposedHeaders:   "",
+		MaxAge:           0,
+		AllowCredentials: nil,
+	}
+}
+
 // ServeHTTP satisfies the httpserver.Handler interface.
 func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	// start by selecting most specific matching upstream config
@@ -126,7 +163,36 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	if upstream == nil {
 		return p.Next.ServeHTTP(w, r)
 	}
-
+	cors := upstream.Cors()
+	if cors != nil {
+		requestOrigin := r.Header.Get(originKey)
+		for _, ao := range cors.AllowedOrigins {
+			if ao == "*" || ao == requestOrigin {
+				responseOrigin := "*"
+				if ao != "*" {
+					responseOrigin = requestOrigin
+				}
+				w.Header().Set(allowOriginKey, responseOrigin)
+				w.Header().Add(varyKey, originKey)
+				break
+			}
+		}
+		w.Header().Set(allowMethodsKey, cors.AllowedMethods)
+		if cors.AllowedHeaders != "" {
+			if cors.AllowedHeaders != "*" {
+				w.Header().Set(allowHeadersKey, cors.AllowedHeaders)
+			} else {
+				w.Header().Set(allowHeadersKey, r.Header.Get(requestHeadersKey))
+			}
+		}
+		w.Header().Set(allowCredentialsKey, "true")
+		if r.Method == http.MethodOptions {
+			if cors.MaxAge > 0 {
+				w.Header().Set(maxAgeKey, fmt.Sprint(cors.MaxAge))
+			}
+			return 0, nil
+		}
+	}
 	// this replacer is used to fill in header field values
 	replacer := httpserver.NewReplacer(r, nil, "")
 
@@ -309,12 +375,13 @@ func (p Proxy) match(r *http.Request) Upstream {
 // that can be sent upstream.
 //
 // Derived from reverseproxy.go in the standard Go httputil package.
-func createUpstreamRequest(rw http.ResponseWriter, r *http.Request) (*http.Request, context.CancelFunc) {
+func createUpstreamRequest(_ http.ResponseWriter, r *http.Request) (*http.Request, context.CancelFunc) {
 	// Original incoming server request may be canceled by the
 	// user or by std lib(e.g. too many idle connections).
 	ctx, cancel := context.WithCancel(r.Context())
-	if cn, ok := rw.(http.CloseNotifier); ok {
-		notifyChan := cn.CloseNotify()
+	rCtx := r.Context()
+	if rCtx != nil {
+		notifyChan := rCtx.Done()
 		go func() {
 			select {
 			case <-notifyChan:

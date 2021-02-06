@@ -77,6 +77,11 @@ type staticUpstream struct {
 	upstreamHeaderReplacements   headerReplacements
 	downstreamHeaderReplacements headerReplacements
 	ClientKeyPair                *tls.Certificate
+	CorsConfig                   *CorsConfig
+}
+
+func (u *staticUpstream) Cors() *CorsConfig {
+	return u.CorsConfig
 }
 
 type srvResolver interface {
@@ -154,6 +159,8 @@ func NewStaticUpstreams(c caddyfile.Dispenser, host string) ([]Upstream, error) 
 			to = append(to, parsed...)
 		}
 
+		//anyOrigins := false
+
 		for c.NextBlock() {
 			switch c.Val() {
 			case "upstream":
@@ -170,6 +177,67 @@ func NewStaticUpstreams(c caddyfile.Dispenser, host string) ([]Upstream, error) 
 					return upstreams, err
 				}
 				to = append(to, parsed...)
+			case "cors":
+				if upstream.CorsConfig == nil {
+					upstream.CorsConfig = DefaultCors()
+				}
+				//c.RemainingArgs()
+				//for c.NextBlock() {
+				//	v := c.Val()
+				//	switch v {
+				//	case "origin":
+				//		if !anyOrigins {
+				//			upstream.CorsConfig.AllowedOrigins = nil
+				//		}
+				//		args := c.RemainingArgs()
+				//		for _, domain := range args {
+				//			upstream.CorsConfig.AllowedOrigins = append(upstream.CorsConfig.AllowedOrigins, strings.Split(domain, ",")...)
+				//		}
+				//		anyOrigins = true
+				//	case "methods":
+				//		if arg, err := singleArg(c, "methods"); err != nil {
+				//			return nil, err
+				//		} else {
+				//			upstream.CorsConfig.AllowedMethods = arg
+				//		}
+				//	case "allow_credentials":
+				//		if arg, err := singleArg(c, "allow_credentials"); err != nil {
+				//			return nil, err
+				//		} else {
+				//			var b bool
+				//			if arg == "true" {
+				//				b = true
+				//			} else if arg != "false" {
+				//				return nil, c.Errf("allow_credentials must be true or false.")
+				//			}
+				//			upstream.CorsConfig.AllowCredentials = &b
+				//		}
+				//	case "max_age":
+				//		if arg, err := singleArg(c, "max_age"); err != nil {
+				//			return nil, err
+				//		} else {
+				//			i, err := strconv.Atoi(arg)
+				//			if err != nil {
+				//				return nil, c.Err("max_age must be valid int")
+				//			}
+				//			upstream.CorsConfig.MaxAge = i
+				//		}
+				//	case "allowed_headers":
+				//		if arg, err := singleArg(c, "allowed_headers"); err != nil {
+				//			return nil, err
+				//		} else {
+				//			upstream.CorsConfig.AllowedHeaders = arg
+				//		}
+				//	case "exposed_headers":
+				//		if arg, err := singleArg(c, "exposed_headers"); err != nil {
+				//			return nil, err
+				//		} else {
+				//			upstream.CorsConfig.ExposedHeaders = arg
+				//		}
+				//	default:
+				//		return nil, c.Errf("Unknown cors config item: %s", c.Val())
+				//	}
+				//}
 			default:
 				if err := parseBlock(&c, upstream, hasSrv); err != nil {
 					return upstreams, err
@@ -214,6 +282,14 @@ func NewStaticUpstreams(c caddyfile.Dispenser, host string) ([]Upstream, error) 
 		upstreams = append(upstreams, upstream)
 	}
 	return upstreams, nil
+}
+
+func singleArg(c caddyfile.Dispenser, desc string) (string, error) {
+	args := c.RemainingArgs()
+	if len(args) != 1 {
+		return "", c.Errf("%s expects exactly one argument", desc)
+	}
+	return args[0], nil
 }
 
 func (u *staticUpstream) From() string {
@@ -571,17 +647,17 @@ func parseBlock(c *caddyfile.Dispenser, u *staticUpstream, hasSrv bool) error {
 		u.Timeout = dur
 	case "tls_client":
 		if !c.NextArg() {
-                        return c.ArgErr()
-                }
-                clientCertFile := c.Val()
+			return c.ArgErr()
+		}
+		clientCertFile := c.Val()
 		if !c.NextArg() {
-                        return c.ArgErr()
-                }
-                clientKeyFile := c.Val()
+			return c.ArgErr()
+		}
+		clientKeyFile := c.Val()
 		clientKeyPair, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
-        	if (err != nil) {
-                	return c.Errf("unable to load keypair from certfile:%s keyfile:%s", clientCertFile, clientKeyFile)
-        	}
+		if err != nil {
+			return c.Errf("unable to load keypair from certfile:%s keyfile:%s", clientCertFile, clientKeyFile)
+		}
 		u.ClientKeyPair = &clientKeyPair
 	default:
 		return c.Errf("unknown property '%s'", c.Val())
