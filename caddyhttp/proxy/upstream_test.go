@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"log"
 	"net"
 	"net/http"
@@ -892,6 +893,86 @@ func TestSRVHealthCheck(t *testing.T) {
 
 		if test.shouldErr && status != "an error occurred" {
 			t.Errorf("Test %d - Expected health check result to be 'an error occured', got '%s'", i, status)
+		}
+	}
+}
+
+func TestProxyCors(t *testing.T) {
+	tests := []struct {
+		config string
+		cors   []*CorsConfig
+	}{
+		{
+			config: `proxy /cors https://github.com {
+				cors {
+					origin "https://www.google.com"
+					methods "POST, OPTIONS"
+				}
+			}`,
+			cors: []*CorsConfig{
+				{
+					AllowedOrigin:    "https://www.google.com",
+					AllowedMethods:   "POST, OPTIONS",
+					AllowedHeaders:   "*",
+				},
+			},
+		},
+		{
+			config: `proxy /cors https://github.com {
+				upstream https://github.com
+				cors {
+					origin "https://www.google.com"
+					methods "POST, OPTIONS"
+				}
+			}`,
+			cors: []*CorsConfig{
+				{
+					AllowedOrigin:    "https://www.google.com",
+					AllowedMethods:   "POST, OPTIONS",
+					AllowedHeaders:   "*",
+				},
+			},
+		},
+		{
+			config: `proxy / https://bogus.service {
+		    upstream http://bogus.service
+		 }`,
+			cors: []*CorsConfig{nil},
+		},
+		{
+			config: `proxy /cors https://github.com {
+				cors {
+					origin "https://www.google.com"
+					methods "POST, OPTIONS"
+				}
+				upstream https://github.com
+			}`,
+			cors: []*CorsConfig{
+				{
+					AllowedOrigin:  "https://www.google.com",
+					AllowedMethods: "POST, OPTIONS",
+					AllowedHeaders: "*",
+				},
+			},
+		},
+		{
+			config: `proxy /cors https://github.com {
+				cors { }
+				upstream https://github.com
+			}`,
+			cors: []*CorsConfig{
+				DefaultCors(),
+			},
+		},
+	}
+
+	for i, test := range tests {
+		upstreams, err := NewStaticUpstreams(caddyfile.NewDispenser("Testfile", strings.NewReader(test.config)), "")
+		if err != nil {
+			t.Errorf("Case %d - Expected an error. got nothing: %s", i, err)
+		}
+		for j, upstream := range upstreams {
+			assert.Equal(t, upstream.Cors(), test.cors[j])
 		}
 	}
 }

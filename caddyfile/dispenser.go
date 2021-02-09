@@ -115,6 +115,9 @@ func (d *Dispenser) NextBlock() bool {
 		if d.Val() == "}" {
 			d.nesting--
 			return false
+		} else if d.Val() == "{" {
+			d.nesting++
+			return true
 		}
 		return true
 	}

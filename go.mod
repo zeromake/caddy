@@ -17,6 +17,7 @@ require (
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.1
 	github.com/russross/blackfriday v1.6.0
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	gopkg.in/mcuadros/go-syslog.v2 v2.2.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0

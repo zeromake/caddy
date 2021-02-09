@@ -18,10 +18,10 @@ package proxy
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -123,34 +123,26 @@ func (uh *UpstreamHost) Available() bool {
 }
 
 const (
-	allowOriginKey      string = "Access-Control-Allow-Origin"
-	allowCredentialsKey        = "Access-Control-Allow-Credentials"
-	allowHeadersKey            = "Access-Control-Allow-Headers"
-	allowMethodsKey            = "Access-Control-Allow-Methods"
-	maxAgeKey                  = "Access-Control-Max-Age"
-	originKey         = "Origin"
-	varyKey           = "Vary"
-	requestMethodKey  = "Access-Control-Request-Method"
-	requestHeadersKey = "Access-Control-Request-Headers"
-	exposeHeadersKey  = "Access-Control-Expose-Headers"
-	options           = "OPTIONS"
+	allowOriginKey      = "Access-Control-Allow-Origin"
+	allowCredentialsKey = "Access-Control-Allow-Credentials"
+	allowHeadersKey     = "Access-Control-Allow-Headers"
+	allowMethodsKey     = "Access-Control-Allow-Methods"
+	maxAgeKey           = "Access-Control-Max-Age"
 )
 
 type CorsConfig struct {
-	AllowedOrigins   []string
+	AllowedOrigin    string
 	AllowedMethods   string
 	AllowedHeaders   string
-	ExposedHeaders   string
 	AllowCredentials *bool
-	MaxAge           int
+	MaxAge           int64
 }
 
 func DefaultCors() *CorsConfig {
 	return &CorsConfig{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigin:    "*",
 		AllowedMethods:   "POST, GET, OPTIONS, PUT, DELETE",
-		AllowedHeaders:   "",
-		ExposedHeaders:   "",
+		AllowedHeaders:   "*",
 		MaxAge:           0,
 		AllowCredentials: nil,
 	}
@@ -165,30 +157,15 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 	cors := upstream.Cors()
 	if cors != nil {
-		requestOrigin := r.Header.Get(originKey)
-		for _, ao := range cors.AllowedOrigins {
-			if ao == "*" || ao == requestOrigin {
-				responseOrigin := "*"
-				if ao != "*" {
-					responseOrigin = requestOrigin
-				}
-				w.Header().Set(allowOriginKey, responseOrigin)
-				w.Header().Add(varyKey, originKey)
-				break
-			}
-		}
+		w.Header().Set(allowOriginKey, cors.AllowedOrigin)
 		w.Header().Set(allowMethodsKey, cors.AllowedMethods)
 		if cors.AllowedHeaders != "" {
-			if cors.AllowedHeaders != "*" {
-				w.Header().Set(allowHeadersKey, cors.AllowedHeaders)
-			} else {
-				w.Header().Set(allowHeadersKey, r.Header.Get(requestHeadersKey))
-			}
+			w.Header().Set(allowHeadersKey, cors.AllowedHeaders)
 		}
 		w.Header().Set(allowCredentialsKey, "true")
 		if r.Method == http.MethodOptions {
 			if cors.MaxAge > 0 {
-				w.Header().Set(maxAgeKey, fmt.Sprint(cors.MaxAge))
+				w.Header().Set(maxAgeKey, strconv.FormatInt(cors.MaxAge, 10))
 			}
 			return 0, nil
 		}

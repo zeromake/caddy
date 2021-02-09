@@ -1544,6 +1544,7 @@ func (u *fakeUpstream) GetTryInterval() time.Duration       { return 250 * time.
 func (u *fakeUpstream) GetTimeout() time.Duration           { return u.timeout }
 func (u *fakeUpstream) GetHostCount() int                   { return 1 }
 func (u *fakeUpstream) Stop() error                         { return nil }
+func (u *fakeUpstream) Cors() *CorsConfig                   { return nil }
 
 // newWebSocketTestProxy returns a test proxy that will
 // redirect to the specified backendAddr. The function
@@ -1601,6 +1602,7 @@ func (u *fakeWsUpstream) GetTryInterval() time.Duration       { return 250 * tim
 func (u *fakeWsUpstream) GetTimeout() time.Duration           { return u.timeout }
 func (u *fakeWsUpstream) GetHostCount() int                   { return 1 }
 func (u *fakeWsUpstream) Stop() error                         { return nil }
+func (u *fakeWsUpstream) Cors() *CorsConfig                   { return nil }
 
 // recorderHijacker is a ResponseRecorder that can
 // be hijacked.
