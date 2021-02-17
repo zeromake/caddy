@@ -128,23 +128,23 @@ const (
 	allowHeadersKey     = "Access-Control-Allow-Headers"
 	allowMethodsKey     = "Access-Control-Allow-Methods"
 	maxAgeKey           = "Access-Control-Max-Age"
+	originKey           = "Origin"
+	varyKey             = "Vary"
 )
 
 type CorsConfig struct {
-	AllowedOrigin    string
-	AllowedMethods   string
-	AllowedHeaders   string
-	AllowCredentials *bool
-	MaxAge           int64
+	AllowedOrigins []string
+	AllowedMethods string
+	AllowedHeaders string
+	MaxAge         int64
 }
 
 func DefaultCors() *CorsConfig {
 	return &CorsConfig{
-		AllowedOrigin:    "*",
-		AllowedMethods:   "POST, GET, OPTIONS, PUT, DELETE",
-		AllowedHeaders:   "*",
-		MaxAge:           0,
-		AllowCredentials: nil,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: "POST, GET, OPTIONS, PUT, DELETE",
+		AllowedHeaders: "*",
+		MaxAge:         0,
 	}
 }
 
@@ -157,17 +157,36 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 	cors := upstream.Cors()
 	if cors != nil {
-		w.Header().Set(allowOriginKey, cors.AllowedOrigin)
-		w.Header().Set(allowMethodsKey, cors.AllowedMethods)
-		if cors.AllowedHeaders != "" {
-			w.Header().Set(allowHeadersKey, cors.AllowedHeaders)
-		}
-		w.Header().Set(allowCredentialsKey, "true")
-		if r.Method == http.MethodOptions {
-			if cors.MaxAge > 0 {
-				w.Header().Set(maxAgeKey, strconv.FormatInt(cors.MaxAge, 10))
+		var rOrigin = r.Header.Get(originKey)
+		var allowedOrigin = ""
+		for _, origin := range cors.AllowedOrigins {
+			if origin == "*" {
+				allowedOrigin = "*"
+				break
 			}
-			return 0, nil
+			if origin == rOrigin {
+				allowedOrigin = origin
+				break
+			}
+		}
+		if allowedOrigin != "" {
+			if allowedOrigin != "*" {
+				w.Header().Add(varyKey, originKey)
+				w.Header().Set(allowCredentialsKey, "true")
+			}
+			w.Header().Set(allowOriginKey, allowedOrigin)
+			if cors.AllowedMethods != "" {
+				w.Header().Set(allowMethodsKey, cors.AllowedMethods)
+			}
+			if cors.AllowedHeaders != "" {
+				w.Header().Set(allowHeadersKey, cors.AllowedHeaders)
+			}
+			if r.Method == http.MethodOptions {
+				if cors.MaxAge > 0 {
+					w.Header().Set(maxAgeKey, strconv.FormatInt(cors.MaxAge, 10))
+				}
+				return 0, nil
+			}
 		}
 	}
 	// this replacer is used to fill in header field values

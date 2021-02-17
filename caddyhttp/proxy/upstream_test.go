@@ -905,13 +905,13 @@ func TestProxyCors(t *testing.T) {
 		{
 			config: `proxy /cors https://github.com {
 				cors {
-					origin "https://www.google.com"
+					origins "https://www.google.com"
 					methods "POST, OPTIONS"
 				}
 			}`,
 			cors: []*CorsConfig{
 				{
-					AllowedOrigin:    "https://www.google.com",
+					AllowedOrigins:    []string{"https://www.google.com"},
 					AllowedMethods:   "POST, OPTIONS",
 					AllowedHeaders:   "*",
 				},
@@ -921,13 +921,13 @@ func TestProxyCors(t *testing.T) {
 			config: `proxy /cors https://github.com {
 				upstream https://github.com
 				cors {
-					origin "https://www.google.com"
+					origins "https://www.google.com"
 					methods "POST, OPTIONS"
 				}
 			}`,
 			cors: []*CorsConfig{
 				{
-					AllowedOrigin:    "https://www.google.com",
+					AllowedOrigins:    []string{"https://www.google.com"},
 					AllowedMethods:   "POST, OPTIONS",
 					AllowedHeaders:   "*",
 				},
@@ -942,14 +942,14 @@ func TestProxyCors(t *testing.T) {
 		{
 			config: `proxy /cors https://github.com {
 				cors {
-					origin "https://www.google.com"
+					origins "https://www.google.com"
 					methods "POST, OPTIONS"
 				}
 				upstream https://github.com
 			}`,
 			cors: []*CorsConfig{
 				{
-					AllowedOrigin:  "https://www.google.com",
+					AllowedOrigins:  []string{"https://www.google.com"},
 					AllowedMethods: "POST, OPTIONS",
 					AllowedHeaders: "*",
 				},
