@@ -19,6 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/caddyserver/caddy/versions"
 	"io"
 	"io/ioutil"
 	"log"
@@ -304,8 +305,9 @@ func getBuildModule() *debug.Module {
 				return mod
 			}
 		}
+		//return &bi.Main
 	}
-	return &debug.Module{Version: "unknown"}
+	return &debug.Module{Version: versions.Version}
 }
 
 func checkJSONCaddyfile() {
