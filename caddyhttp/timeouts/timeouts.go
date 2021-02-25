@@ -33,7 +33,7 @@ func setupTimeouts(c *caddy.Controller) error {
 
 	for c.Next() {
 		var hasOptionalBlock bool
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			hasOptionalBlock = true
 
 			// ensure the kind of timeout is recognized

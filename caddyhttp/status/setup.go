@@ -60,7 +60,7 @@ func statusParse(c *caddy.Controller) ([]httpserver.HandlerConfig, error) {
 				return rules, c.Errf("Expecting a numeric status code, got '%s'", args[0])
 			}
 
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				hadBlock = true
 				basePath := c.Val()
 

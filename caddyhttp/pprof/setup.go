@@ -37,7 +37,7 @@ func setup(c *caddy.Controller) error {
 		if len(c.RemainingArgs()) != 0 {
 			return c.ArgErr()
 		}
-		if c.NextBlock() {
+		if c.NextBlock(0) {
 			return c.ArgErr()
 		}
 		found = true

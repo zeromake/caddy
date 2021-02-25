@@ -124,7 +124,7 @@ func redirParse(c *caddy.Controller) ([]Rule, error) {
 		}
 
 		var hadOptionalBlock bool
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			if httpserver.IfMatcherKeyword(c) {
 				continue
 			}

@@ -159,7 +159,7 @@ func NewStaticUpstreams(c caddyfile.Dispenser, host string) ([]Upstream, error) 
 			to = append(to, parsed...)
 		}
 		var anyOrigins bool
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			switch c.Val() {
 			case "upstream":
 				if !c.NextArg() {
@@ -179,61 +179,42 @@ func NewStaticUpstreams(c caddyfile.Dispenser, host string) ([]Upstream, error) 
 				if upstream.CorsConfig == nil {
 					upstream.CorsConfig = DefaultCors()
 				}
-				c.NextBlock()
-				if c.Val() == "{" {
-					for c.NextBlock() {
-						switch c.Val() {
-						case "origins":
-							if !anyOrigins {
-								upstream.CorsConfig.AllowedOrigins = nil
-							}
-							args := c.RemainingArgs()
-							for _, domain := range args {
-								upstream.CorsConfig.AllowedOrigins = append(upstream.CorsConfig.AllowedOrigins, strings.Split(domain, ",")...)
-							}
-							anyOrigins = true
-						case "methods":
-							if arg, err := singleArg(&c, "methods"); err != nil {
-								return nil, err
-							} else {
-								upstream.CorsConfig.AllowedMethods = arg
-							}
-						//case "allow_credentials":
-						//	if arg, err := singleArg(&c, "allow_credentials"); err != nil {
-						//		return nil, err
-						//	} else {
-						//		var b bool
-						//		if arg == "true" {
-						//			b = true
-						//		} else if arg != "false" {
-						//			return nil, c.Errf("allow_credentials must be true or false.")
-						//		}
-						//		upstream.CorsConfig.AllowCredentials = &b
-						//	}
-						case "max_age":
-							if arg, err := singleArg(&c, "max_age"); err != nil {
-								return nil, err
-							} else {
-								i, err := strconv.ParseInt(arg, 10, 0)
-								if err != nil {
-									return nil, c.Err("max_age must be valid int")
-								}
-								upstream.CorsConfig.MaxAge = i
-							}
-						case "allowed_headers":
-							if arg, err := singleArg(&c, "allowed_headers"); err != nil {
-								return nil, err
-							} else {
-								upstream.CorsConfig.AllowedHeaders = arg
-							}
-						default:
-							return nil, c.Errf("Unknown cors config item: %s", c.Val())
+				for c.NextBlock(1) {
+					switch c.Val() {
+					case "origins":
+						if !anyOrigins {
+							upstream.CorsConfig.AllowedOrigins = nil
 						}
+						args := c.RemainingArgs()
+						for _, domain := range args {
+							upstream.CorsConfig.AllowedOrigins = append(upstream.CorsConfig.AllowedOrigins, strings.Split(domain, ",")...)
+						}
+						anyOrigins = true
+					case "methods":
+						if arg, err := singleArg(&c, "methods"); err != nil {
+							return nil, err
+						} else {
+							upstream.CorsConfig.AllowedMethods = arg
+						}
+					case "max_age":
+						if arg, err := singleArg(&c, "max_age"); err != nil {
+							return nil, err
+						} else {
+							i, err := strconv.ParseInt(arg, 10, 0)
+							if err != nil {
+								return nil, c.Err("max_age must be valid int")
+							}
+							upstream.CorsConfig.MaxAge = i
+						}
+					case "allowed_headers":
+						if arg, err := singleArg(&c, "allowed_headers"); err != nil {
+							return nil, err
+						} else {
+							upstream.CorsConfig.AllowedHeaders = arg
+						}
+					default:
+						return nil, c.Errf("Unknown cors config item: %s", c.Val())
 					}
-				} else if c.Val() == "{}" {
-
-				} else {
-					return nil, c.Errf("cors must has config item: %s", c.Val())
 				}
 			default:
 				if err := parseBlock(&c, upstream, hasSrv); err != nil {

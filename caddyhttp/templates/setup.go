@@ -72,7 +72,7 @@ func templatesParse(c *caddy.Controller) ([]Rule, error) {
 		switch len(args) {
 		case 0:
 			// Optional block
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				switch c.Val() {
 				case "path":
 					args := c.RemainingArgs()

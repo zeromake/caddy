@@ -65,7 +65,7 @@ func parsePushRules(c *caddy.Controller) ([]Rule, error) {
 		var ops []ruleOp
 
 		parseBlock := func() error {
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				val := c.Val()
 
 				switch val {

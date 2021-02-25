@@ -76,7 +76,7 @@ func basicAuthParse(c *caddy.Controller) ([]Rule, error) {
 		}
 
 		// If nested block is present, process it here
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			val := c.Val()
 			args = c.RemainingArgs()
 			switch len(args) {

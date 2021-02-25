@@ -77,7 +77,7 @@ func markdownParse(c *caddy.Controller) ([]*Config, error) {
 		}
 
 		// Load any other configuration parameters
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			if err := loadParams(c, md); err != nil {
 				return mdconfigs, err
 			}

@@ -55,7 +55,7 @@ func errorsParse(c *caddy.Controller) (*ErrorHandler, error) {
 	cfg := httpserver.GetConfig(c)
 
 	optionalBlock := func() error {
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 
 			what := c.Val()
 			where := c.RemainingArgs()

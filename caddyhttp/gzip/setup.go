@@ -58,7 +58,7 @@ func gzipParse(c *caddy.Controller) ([]Config, error) {
 			return configs, c.ArgErr()
 		}
 
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			switch c.Val() {
 			case "ext":
 				exts := c.RemainingArgs()

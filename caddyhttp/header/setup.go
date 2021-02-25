@@ -69,7 +69,7 @@ func headersParse(c *caddy.Controller) ([]Rule, error) {
 			isNewPattern = true
 		}
 
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			// A block of headers was opened...
 			name := c.Val()
 			value := ""

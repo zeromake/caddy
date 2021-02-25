@@ -100,7 +100,7 @@ func fastcgiParse(c *caddy.Controller) ([]Rule, error) {
 
 		var err error
 
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			switch c.Val() {
 			case "root":
 				if !c.NextArg() {

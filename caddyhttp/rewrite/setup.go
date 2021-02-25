@@ -75,7 +75,7 @@ func rewriteParse(c *caddy.Controller) ([]httpserver.HandlerConfig, error) {
 				return nil, err
 			}
 
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				if httpserver.IfMatcherKeyword(c) {
 					continue
 				}

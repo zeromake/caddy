@@ -964,6 +964,15 @@ func TestProxyCors(t *testing.T) {
 				DefaultCors(),
 			},
 		},
+		{
+			config: `proxy /cors https://github.com {
+				cors
+				upstream https://github.com
+			}`,
+			cors: []*CorsConfig{
+				DefaultCors(),
+			},
+		},
 	}
 
 	for i, test := range tests {

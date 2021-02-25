@@ -54,7 +54,7 @@ func webSocketParse(c *caddy.Controller) ([]Config, error) {
 		var bufSize int
 
 		optionalBlock := func() (hadBlock bool, err error) {
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				hadBlock = true
 				if c.Val() == "respawn" {
 					respawn = true

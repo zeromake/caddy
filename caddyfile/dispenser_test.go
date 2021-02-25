@@ -146,7 +146,7 @@ func TestDispenser_NextBlock(t *testing.T) {
 	d := NewDispenser("Testfile", strings.NewReader(input))
 
 	assertNextBlock := func(shouldLoad bool, expectedCursor, expectedNesting int) {
-		if loaded := d.NextBlock(); loaded != shouldLoad {
+		if loaded := d.NextBlock(0); loaded != shouldLoad {
 			t.Errorf("NextBlock(): Should return %v but got %v", shouldLoad, loaded)
 		}
 		if d.cursor != expectedCursor {

@@ -142,7 +142,7 @@ func setupTLS(c *caddy.Controller) error {
 
 		// Optional block with extra parameters
 		var hadBlock bool
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			hadBlock = true
 			switch c.Val() {
 			case "ca":

@@ -28,7 +28,7 @@ import (
 func SetupIfMatcher(controller *caddy.Controller) (RequestMatcher, error) {
 	var c = controller.Dispenser // copy the dispenser
 	var matcher IfMatcher
-	for c.NextBlock() {
+	for c.NextBlock(0) {
 		switch c.Val() {
 		case "if":
 			args1 := c.RemainingArgs()

@@ -59,7 +59,7 @@ func mimeParse(c *caddy.Controller) (Config, error) {
 		case 1:
 			return configs, c.ArgErr()
 		case 0:
-			for c.NextBlock() {
+			for c.NextBlock(0) {
 				ext := c.Val()
 				if err := validateExt(configs, ext); err != nil {
 					return configs, err

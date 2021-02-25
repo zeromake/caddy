@@ -103,38 +103,82 @@ func (d *Dispenser) NextLine() bool {
 	return false
 }
 
-// NextBlock can be used as the condition of a for loop
-// to load the next token as long as it opens a block or
-// is already in a block. It returns true if a token was
-// loaded, or false when the block's closing curly brace
-// was loaded and thus the block ended. Nested blocks are
-// not supported.
-func (d *Dispenser) NextBlock() bool {
-	if d.nesting > 0 {
-		d.Next()
-		if d.Val() == "}" {
-			d.nesting--
-			return false
-		} else if d.Val() == "{" {
-			d.nesting++
-			return true
-		}
+// nextOnSameLine advances the cursor if the next
+// token is on the same line of the same file.
+func (d *Dispenser) nextOnSameLine() bool {
+	if d.cursor < 0 {
+		d.cursor++
 		return true
 	}
-	if !d.NextArg() { // block must open on same line
+	if d.cursor >= len(d.tokens) {
+		return false
+	}
+	if d.cursor < len(d.tokens)-1 &&
+		d.tokens[d.cursor].File == d.tokens[d.cursor+1].File &&
+		d.tokens[d.cursor].Line+d.numLineBreaks(d.cursor) == d.tokens[d.cursor+1].Line {
+		d.cursor++
+		return true
+	}
+	return false
+}
+
+// NextBlock can be used as the condition of a for loop
+// to load the next token as long as it opens a block or
+// is already in a block nested more than initialNestingLevel.
+// In other words, a loop over NextBlock() will iterate
+// all tokens in the block assuming the next token is an
+// open curly brace, until the matching closing brace.
+// The open and closing brace tokens for the outer-most
+// block will be consumed internally and omitted from
+// the iteration.
+//
+// Proper use of this method looks like this:
+//
+//     for nesting := d.Nesting(); d.NextBlock(nesting); {
+//     }
+//
+// However, in simple cases where it is known that the
+// Dispenser is new and has not already traversed state
+// by a loop over NextBlock(), this will do:
+//
+//     for d.NextBlock(0) {
+//     }
+//
+// As with other token parsing logic, a loop over
+// NextBlock() should be contained within a loop over
+// Next(), as it is usually prudent to skip the initial
+// token.
+func (d *Dispenser) NextBlock(initialNestingLevel int) bool {
+	if d.nesting > initialNestingLevel {
+		if !d.Next() {
+			return false // should be EOF error
+		}
+		if d.Val() == "}" && !d.nextOnSameLine() {
+			d.nesting--
+		} else if d.Val() == "{" && !d.nextOnSameLine() {
+			d.nesting++
+		}
+		return d.nesting > initialNestingLevel
+	}
+	if !d.nextOnSameLine() { // block must open on same line
 		return false
 	}
 	if d.Val() != "{" {
 		d.cursor-- // roll back if not opening brace
 		return false
 	}
-	d.Next()
+	d.Next() // consume open curly brace
 	if d.Val() == "}" {
-		// Open and then closed right away
-		return false
+		return false // open and then closed right away
 	}
 	d.nesting++
 	return true
+}
+
+// Nesting returns the current nesting level. Necessary
+// if using NextBlock()
+func (d *Dispenser) Nesting() int {
+	return d.nesting
 }
 
 // Val gets the text of the current token. If there is no token

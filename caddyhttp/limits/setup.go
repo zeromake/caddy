@@ -73,7 +73,7 @@ func parseLimits(c *caddy.Controller) ([]httpserver.PathLimit, error) {
 		//	body <limit>
 		//	...
 		// }
-		for c.NextBlock() {
+		for c.NextBlock(0) {
 			kind := c.Val()
 			pathOrLimit := c.RemainingArgs()
 			switch kind {
